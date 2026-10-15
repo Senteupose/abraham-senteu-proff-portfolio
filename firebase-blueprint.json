@@ -1,0 +1,156 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document containing authentication metadata and preferences.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique user ID matching auth.uid."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's verified email address."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's display name."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User avatar URL."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["visitor", "recruiter", "client", "admin"],
+          "description": "User classification."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Account initialization timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last profile update timestamp."
+        }
+      },
+      "required": ["id", "email", "createdAt"]
+    },
+    "ProjectBookmark": {
+      "title": "ProjectBookmark",
+      "description": "Saved project bookmarked by an authenticated user.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Bookmark ID (matches projectId)."
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the bookmark owner."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Referenced project ID."
+        },
+        "projectTitle": {
+          "type": "string",
+          "description": "Cached title of the project."
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the bookmarked project."
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Private user notes regarding this project."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp."
+        }
+      },
+      "required": ["id", "userId", "projectId", "projectTitle", "createdAt"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Project inquiry or consultation request submitted by a user.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique inquiry identifier."
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the inquiry author."
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Author full name."
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Contact email address."
+        },
+        "organization": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Company or institution name."
+        },
+        "inquiryType": {
+          "type": "string",
+          "description": "Engagement category or project type."
+        },
+        "subject": {
+          "type": "string",
+          "maxLength": 150,
+          "description": "Subject of the inquiry."
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Detailed project brief or role specifications."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "reviewed", "archived"],
+          "description": "Status of the inquiry."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Submission timestamp."
+        }
+      },
+      "required": ["id", "userId", "name", "email", "inquiryType", "message", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "User profile documents keyed by Firebase Auth UID."
+    },
+    "/users/{userId}/bookmarks/{bookmarkId}": {
+      "schema": {
+        "$ref": "#/entities/ProjectBookmark"
+      },
+      "description": "Subcollection of saved projects for a specific user."
+    },
+    "/users/{userId}/inquiries/{inquiryId}": {
+      "schema": {
+        "$ref": "#/entities/Inquiry"
+      },
+      "description": "Subcollection of project inquiries submitted by the user."
+    }
+  }
+}

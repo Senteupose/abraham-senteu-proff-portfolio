@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Health / connection test rule
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile Validation
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['id', 'email', 'createdAt']) &&
+             data.keys().hasOnly(['id', 'email', 'displayName', 'photoURL', 'role', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id == request.auth.uid &&
+             data.email is string && data.email.size() <= 120 &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1000)) &&
+             (!('role' in data) || (data.role in ['visitor', 'recruiter', 'client', 'admin'])) &&
+             data.createdAt is string;
+    }
+
+    // Bookmark Validation
+    function isValidBookmark(data) {
+      return data.keys().hasAll(['id', 'userId', 'projectId', 'projectTitle', 'createdAt']) &&
+             data.keys().hasOnly(['id', 'userId', 'projectId', 'projectTitle', 'category', 'notes', 'createdAt']) &&
+             data.id is string && data.id.size() <= 100 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.projectId is string && data.projectId.size() <= 100 &&
+             data.projectTitle is string && data.projectTitle.size() <= 150 &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 50)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
+             data.createdAt is string;
+    }
+
+    // Inquiry Validation
+    function isValidInquiry(data) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'email', 'inquiryType', 'message', 'status', 'createdAt']) &&
+             data.keys().hasOnly(['id', 'userId', 'name', 'email', 'organization', 'inquiryType', 'subject', 'message', 'status', 'createdAt']) &&
+             data.id is string && data.id.size() <= 100 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 100 &&
+             (!('organization' in data) || (data.organization is string && data.organization.size() <= 100)) &&
+             data.inquiryType is string && data.inquiryType.size() <= 100 &&
+             (!('subject' in data) || (data.subject is string && data.subject.size() <= 150)) &&
+             data.message is string && data.message.size() > 0 && data.message.size() <= 2000 &&
+             data.status in ['pending', 'reviewed', 'archived'] &&
+             data.createdAt is string;
+    }
+
+    // Rules for Users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Deny listing all users
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidUserProfile(incoming()) && incoming().id == existing().id;
+      allow delete: if false;
+
+      // Subcollection: Bookmarks
+      match /bookmarks/{bookmarkId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidBookmark(incoming());
+        allow update: if isOwner(userId) && isValidBookmark(incoming()) && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId);
+      }
+
+      // Subcollection: Inquiries
+      match /inquiries/{inquiryId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidInquiry(incoming());
+        allow update: if isOwner(userId) && isValidInquiry(incoming()) && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

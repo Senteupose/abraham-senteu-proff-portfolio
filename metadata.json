@@ -1,0 +1,8 @@
+{
+  "name": "Remix DesignPortfolio Builder",
+  "description": "Easily create and customize a professional portfolio website to showcase your design projects and connect with potential clients.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
